@@ -285,7 +285,7 @@ int main() {
 
         gettimeofday(&now, NULL);
         long elapsed = now.tv_sec - start.tv_sec;
-        int wpm_now = (elapsed > 0) ? my_divide(my_multiply(current_index, 12), elapsed) : 0;
+        int wpm_now = (elapsed > 0) ? my_divide(my_multiply(correct, 12), elapsed) : 0;
 
         render_typing_view(target, typed, current_index, target_len,
                            correct, mistakes, wpm_now, accuracy_now, elapsed);
