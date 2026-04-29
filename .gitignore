@@ -3,3 +3,13 @@ tutor
 profile.bin
 *.dSYM/
 
+# Node & Web
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+.env*
+
+# Data
+backend/data/*.json
