@@ -333,7 +333,7 @@ export default function Home() {
   }
 
   const currentWpmHistory = useMemo(() => {
-    const history = [];
+    const history: { time: number; wpm: number }[] = [];
     if (!target) return history;
     const maxSecs = Math.floor(elapsedMs / 1000);
     for (let s = 1; s <= maxSecs; s++) {
