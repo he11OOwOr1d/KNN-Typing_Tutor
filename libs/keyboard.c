@@ -5,26 +5,43 @@
 #include "keyboard.h"
 
 static struct termios orig_termios;
+static int has_orig = 0;
 
 void disable_raw_mode() {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+    if (has_orig) {
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+    }
 }
 
+// Blocking raw mode — waits for a keypress. Used for menus.
 void enable_raw_mode() {
-    tcgetattr(STDIN_FILENO, &orig_termios);
-    
+    if (!has_orig) {
+        tcgetattr(STDIN_FILENO, &orig_termios);
+        has_orig = 1;
+    }
     struct termios raw = orig_termios;
-    // Disable canonical mode (don't wait for Enter)
-    // Disable echo (don't print keys we type)
     raw.c_lflag &= ~(ECHO | ICANON);
-    
+    raw.c_cc[VMIN] = 1;   // wait for 1 byte
+    raw.c_cc[VTIME] = 0;  // no timeout
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+
+// Non-blocking raw mode — returns after 100ms even with no input. Used for timed sessions.
+void enable_raw_mode_nb() {
+    if (!has_orig) {
+        tcgetattr(STDIN_FILENO, &orig_termios);
+        has_orig = 1;
+    }
+    struct termios raw = orig_termios;
+    raw.c_lflag &= ~(ECHO | ICANON);
+    raw.c_cc[VMIN] = 0;   // don't require any bytes
+    raw.c_cc[VTIME] = 1;  // 100ms timeout
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
 char read_key() {
     char c = '\0';
-    // Read 1 byte from standard input.
-    // In raw mode, this will return immediately when a key is pressed.
-    read(STDIN_FILENO, &c, 1);
-    return c;
+    int n = read(STDIN_FILENO, &c, 1);
+    if (n < 0) return 27;  // error → ESC
+    return c;  // 0 if timeout (non-blocking), actual char if blocking
 }

@@ -15,12 +15,20 @@ unsigned int my_rand() {
     return rand_state;
 }
 
+// Russian peasant multiplication — O(log b) instead of O(b)
+// Handles both positive and negative values correctly
 int my_multiply(int a, int b) {
+    int negative = 0;
+    if (b < 0) { negative = !negative; b = -b; }
+    if (a < 0) { negative = !negative; a = -a; }
+
     int result = 0;
-    for (int i = 0; i < b; i++) {
-        result += a;
+    while (b > 0) {
+        if (b & 1) result += a;
+        a += a;  // a = a * 2
+        b >>= 1; // b = b / 2
     }
-    return result;
+    return negative ? -result : result;
 }
 
 int my_divide(int a, int b) {
