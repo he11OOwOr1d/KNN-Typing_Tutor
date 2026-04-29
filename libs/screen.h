@@ -3,6 +3,7 @@
 #include "analytics.h"
 
 void clear_screen();
+void clear_screen_and_save();
 void enter_alt_screen();
 void exit_alt_screen();
 void print_string(char* str);

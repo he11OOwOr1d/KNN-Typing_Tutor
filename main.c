@@ -64,7 +64,7 @@ void draw_header() {
     clear_screen();
     hide_cursor();
     set_color_cyan(); set_color_bold();
-    printf("\n  ⌨ TYPING TUTOR");
+    printf("  ⌨ TYPING TUTOR");
     reset_color();
     set_color_dim(); printf("  —  terminal edition\n\n"); reset_color();
 }
@@ -93,7 +93,7 @@ void render_session(char* target, char* typed, int typed_len, int target_len,
     int cursor_line = get_cursor_line(typed_len);
     int first_visible = cursor_line;
 
-    move_cursor(4, 1);
+    move_cursor(3, 1);
 
     // Stats bar
     printf("  ");
@@ -117,7 +117,7 @@ void render_session(char* target, char* typed, int typed_len, int target_len,
         set_color_dim(); printf("⏱ %lds", elapsed);
     }
     reset_color();
-    printf("                    \n\n");
+    printf("                    \n");
 
     // Render text lines
     for (int v = 0; v < VISIBLE_LINES; v++) {
@@ -150,8 +150,7 @@ void render_session(char* target, char* typed, int typed_len, int target_len,
     printf("\n  ");
     draw_progress_bar(typed_len, target_len, 45);
     printf("  %d/%d\n", typed_len, target_len);
-    printf("\n");
-    set_color_dim(); printf("  ESC quit · Backspace correct\n"); reset_color();
+    set_color_dim(); printf("  ESC quit · Backspace correct"); reset_color();
     fflush(stdout);
 }
 
@@ -198,7 +197,7 @@ void draw_wpm_graph(UserStats* stats) {
         int col = 0;
         for (int i = 0; i < stats->wpm_history_len && col < 50; i += step) {
             int val = stats->wpm_history[i];
-            if (val >= threshold) {
+            if (val > 0 && val >= threshold) {
                 set_color_cyan();
                 printf("█");
                 reset_color();
@@ -246,6 +245,7 @@ void run_session(UserProfile* profile) {
     // Generate plenty of words — enough for even 120 WPM typists
     int word_count = profile->session_duration * 3;
     if (word_count < 50) word_count = 50;
+    if (word_count > 500) word_count = 500; // Cap to prevent buffer overflow
 
     // Pick word pool based on difficulty
     const char** pool = words;
@@ -302,6 +302,7 @@ void run_session(UserProfile* profile) {
 
     struct timeval start, now;
     int started = 0;
+    int aborted = 0;
     int current_index = 0;
     int correct = 0;
     int mistakes = 0;
@@ -324,7 +325,10 @@ void run_session(UserProfile* profile) {
 
             // Sample WPM every second
             if (elapsed > last_wpm_sample) {
-                int wpm_now = (elapsed > 0) ? my_divide(my_multiply(correct, 12), (int)elapsed) : 0;
+                int gross = (elapsed > 0) ? my_divide(my_multiply(current_index, 12), (int)elapsed) : 0;
+                int penalty = (elapsed > 0) ? my_divide(my_multiply(mistakes, 60), (int)elapsed) : 0;
+                int wpm_now = gross - penalty;
+                if (wpm_now < 0) wpm_now = 0;
                 record_wpm_sample(&stats, wpm_now);
                 last_wpm_sample = elapsed;
             }
@@ -339,7 +343,10 @@ void run_session(UserProfile* profile) {
                         if (typed[i] == target[i]) correct++; else mistakes++;
                     }
                     int acc = (current_index > 0) ? my_divide(my_multiply(correct, 100), current_index) : 100;
-                    int wpm = (elapsed > 0) ? my_divide(my_multiply(correct, 12), (int)elapsed) : 0;
+                    int gross = (elapsed > 0) ? my_divide(my_multiply(current_index, 12), (int)elapsed) : 0;
+                    int penalty = (elapsed > 0) ? my_divide(my_multiply(mistakes, 60), (int)elapsed) : 0;
+                    int wpm = gross - penalty;
+                    if (wpm < 0) wpm = 0;
                     draw_header();
                     render_session(target, typed, current_index, target_len,
                                    correct, mistakes, wpm, acc, elapsed, profile->session_duration,
@@ -359,7 +366,10 @@ void run_session(UserProfile* profile) {
             started = 1;
         }
 
-        if (c == 27) break;
+        if (c == 27) {
+            aborted = 1;
+            break;
+        }
 
         if (c == 127 || c == '\b') {
             if (current_index > 0) { current_index--; typed[current_index] = '\0'; }
@@ -384,7 +394,10 @@ void run_session(UserProfile* profile) {
         int accuracy_now = (current_index > 0) ? my_divide(my_multiply(correct, 100), current_index) : 100;
         gettimeofday(&now, NULL);
         long elapsed = now.tv_sec - start.tv_sec;
-        int wpm_now = (elapsed > 0) ? my_divide(my_multiply(correct, 12), (int)elapsed) : 0;
+        int gross_now = (elapsed > 0) ? my_divide(my_multiply(current_index, 12), (int)elapsed) : 0;
+        int penalty_now = (elapsed > 0) ? my_divide(my_multiply(mistakes, 60), (int)elapsed) : 0;
+        int wpm_now = gross_now - penalty_now;
+        if (wpm_now < 0) wpm_now = 0;
 
         // Sample WPM for graph (word-count mode too)
         if (elapsed > last_wpm_sample) {
@@ -401,12 +414,20 @@ void run_session(UserProfile* profile) {
     disable_raw_mode();
     show_cursor();
 
+    if (aborted) {
+        clear_screen_and_save();
+        return;
+    }
+
     long seconds = 0;
     if (started) { gettimeofday(&now, NULL); seconds = now.tv_sec - start.tv_sec; }
     if (seconds <= 0) seconds = 1;
 
     int accuracy_final = (current_index > 0) ? my_divide(my_multiply(correct, 100), current_index) : 0;
-    int wpm_final = my_divide(my_multiply(current_index, 12), (int)seconds);
+    int gross_final = my_divide(my_multiply(current_index, 12), (int)seconds);
+    int penalty_final = my_divide(my_multiply(mistakes, 60), (int)seconds);
+    int wpm_final = gross_final - penalty_final;
+    if (wpm_final < 0) wpm_final = 0;
 
     // ═══════════════════════════════════════════════════════
     //  ANALYTICS DASHBOARD
@@ -465,10 +486,11 @@ void run_session(UserProfile* profile) {
 
     // Speed grade
     printf("  ");
-    if (wpm_final >= 80) { set_color_green(); set_color_bold(); printf("GRADE: S+ LEGENDARY"); }
-    else if (wpm_final >= 60) { set_color_green(); set_color_bold(); printf("GRADE: A  EXPERT"); }
-    else if (wpm_final >= 40) { set_color_cyan(); set_color_bold(); printf("GRADE: B  PROFICIENT"); }
-    else if (wpm_final >= 25) { set_color_yellow(); set_color_bold(); printf("GRADE: C  DEVELOPING"); }
+    if (accuracy_final < 60) { set_color_red(); set_color_bold(); printf("GRADE: F  INVALID (Too many errors)"); }
+    else if (wpm_final >= 80 && accuracy_final >= 95) { set_color_green(); set_color_bold(); printf("GRADE: S+ LEGENDARY"); }
+    else if (wpm_final >= 60 && accuracy_final >= 90) { set_color_green(); set_color_bold(); printf("GRADE: A  EXPERT"); }
+    else if (wpm_final >= 40 && accuracy_final >= 85) { set_color_cyan(); set_color_bold(); printf("GRADE: B  PROFICIENT"); }
+    else if (wpm_final >= 25 && accuracy_final >= 80) { set_color_yellow(); set_color_bold(); printf("GRADE: C  DEVELOPING"); }
     else { set_color_red(); set_color_bold(); printf("GRADE: D  BEGINNER"); }
     reset_color();
     printf("\n");
@@ -550,13 +572,20 @@ void run_session(UserProfile* profile) {
     // ── Recommendations ──
     set_color_yellow(); set_color_bold(); printf("  💡 RECOMMENDATIONS\n"); reset_color();
     char weak = get_weakest_char(&stats);
-    if (weak != ' ' && current_index > 5)
-        printf("  → '%c' is your bottleneck (%d ms avg)\n", weak, get_average_latency(&stats, weak));
+    char fast = get_fastest_char(&stats);
+
+    if (weak != ' ' && current_index > 5) {
+        if (weak == fast) {
+            printf("  → Holding down '%c' won't help you learn to type! Try the actual text!\n", weak);
+        } else {
+            printf("  → '%c' is your bottleneck (%d ms avg)\n", weak, get_average_latency(&stats, weak));
+        }
+    }
     if (consistency < 60) printf("  → Inconsistent rhythm — try to keep even tempo\n");
     if (accuracy_final < 90) printf("  → Accuracy first! Slow down to build muscle memory\n");
     else if (wpm_final >= 40 && accuracy_final >= 95) printf("  → Outstanding! You're typing at professional level\n");
-    char fast = get_fastest_char(&stats);
-    if (fast != ' ')
+
+    if (fast != ' ' && fast != weak && current_index > 5)
         printf("  → '%c' is your strongest key (%d ms) — nice!\n", fast, get_average_latency(&stats, fast));
     if (stats.best_streak >= 20) printf("  → Incredible %d-char streak! Consistency is building\n", stats.best_streak);
     printf("\n");
@@ -592,7 +621,7 @@ int main() {
     load_profile(&profile);
 
     while (1) {
-        clear_screen(); show_cursor();
+        clear_screen_and_save(); show_cursor();
         printf("\n");
         set_color_cyan(); set_color_bold(); printf("  ⌨ TYPING TUTOR\n"); reset_color();
         printf("\n");
@@ -705,6 +734,13 @@ int main() {
             save_profile(&profile);
             while (1) {
                 run_session(&profile);
+
+                // Flush any accidental extra keystrokes from the buffer
+                enable_raw_mode_nb();
+                while (read_key() != 0);
+                disable_raw_mode();
+
+                // Wait for user to acknowledge analytics
                 enable_raw_mode();
                 char next = read_key();
                 disable_raw_mode();

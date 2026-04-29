@@ -2,7 +2,14 @@
 #include "screen.h"
 
 void clear_screen() {
-    printf("\033[2J\033[1;1H");
+    printf("\033[H\033[J");
+    fflush(stdout);
+}
+
+void clear_screen_and_save() {
+    // Explicitly pushes the current view to scrollback history
+    // and clears the screen cleanly for the main menu
+    printf("\033[2J\033[H");
     fflush(stdout);
 }
 
