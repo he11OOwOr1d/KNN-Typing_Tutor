@@ -11,9 +11,10 @@ const dataFile = path.join(__dirname, "../data/attempts.json");
 
 const app = express();
 const port = process.env.PORT || 4000;
-const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || "0.0.0.0";
 
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000" }));
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000").split(",");
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: "1mb" }));
 
 const sentences = [
