@@ -88,3 +88,67 @@ void draw_progress_bar(int current, int total, int width) {
     printf("\033[38;5;220m%d%%\033[0m", pct);
     fflush(stdout);
 }
+
+void set_latency_color(int avg) {
+    if (avg == 0)      set_color_dim();
+    else if (avg < 150) printf("\033[38;5;46m");   // Bright green (fastest)
+    else if (avg < 250) printf("\033[38;5;82m");   // Green
+    else if (avg < 400) printf("\033[38;5;220m");  // Yellow (normal)
+    else if (avg < 600) printf("\033[38;5;208m");  // Orange (slow)
+    else                printf("\033[38;5;196m");  // Red (weakness)
+    fflush(stdout);
+}
+
+void draw_keyboard_heatmap(UserStats* stats) {
+    char* rows[] = {
+        "qwertyuiop",
+        "asdfghjkl",
+        "zxcvbnm"
+    };
+    int offsets[] = {0, 1, 2};
+
+    printf("\n");
+    set_color_cyan(); set_color_bold();
+    printf("  ┌─────────────────────────────────────────┐\n");
+    printf("  │         KEYBOARD HEATMAP                 │\n");
+    printf("  └─────────────────────────────────────────┘\n");
+    reset_color();
+    printf("\n");
+
+    for (int r = 0; r < 3; r++) {
+        // Key labels
+        printf("  ");
+        for (int o = 0; o < offsets[r] * 2; o++) printf(" ");
+        for (int i = 0; rows[r][i] != '\0'; i++) {
+            char c = rows[r][i];
+            int avg = get_average_latency(stats, c);
+            if (avg == 0) {
+                set_color_dim();
+                printf(" %c  ", c - 32);
+            } else {
+                set_latency_color(avg);
+                printf(" %c  ", c - 32);
+            }
+            reset_color();
+        }
+        printf("\n\n");
+    }
+
+    // Space bar
+    int space_avg = get_average_latency(stats, ' ');
+    printf("        ");
+    if (space_avg == 0) set_color_dim(); else set_latency_color(space_avg);
+    printf("      [  SPACE  ]");
+    reset_color();
+    printf("\n\n");
+
+    // Legend
+    set_color_dim(); printf("  ");
+    printf("\033[38;5;46m█\033[0m");  set_color_dim(); printf("<150ms  ");
+    printf("\033[38;5;82m█\033[0m");  set_color_dim(); printf("<250ms  ");
+    printf("\033[38;5;220m█\033[0m"); set_color_dim(); printf("<400ms  ");
+    printf("\033[38;5;208m█\033[0m"); set_color_dim(); printf("<600ms  ");
+    printf("\033[38;5;196m█\033[0m"); set_color_dim(); printf("600+ms");
+    reset_color();
+    printf("\n\n");
+}

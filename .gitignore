@@ -1,0 +1,5 @@
+*.o
+tutor
+profile.bin
+*.dSYM/
+
