@@ -1,0 +1,347 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Avenir Next", "Satoshi", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --background: 225 24% 4%;
+  --foreground: 210 20% 96%;
+  --card: 224 18% 7%;
+  --card-foreground: 210 20% 96%;
+  --muted: 222 14% 13%;
+  --muted-foreground: 218 10% 60%;
+  --accent: 218 54% 18%;
+  --accent-foreground: 214 88% 86%;
+  --primary: 210 20% 96%;
+  --primary-foreground: 225 24% 4%;
+  --destructive: 357 74% 62%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 13% 18%;
+  --input: 220 13% 18%;
+  --ring: 212 92% 68%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: hsl(var(--background));
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  color: hsl(var(--foreground));
+  background:
+    linear-gradient(180deg, rgba(18, 28, 52, 0.72), rgba(5, 7, 13, 0.96) 42%, hsl(var(--background))),
+    hsl(var(--background));
+  font-family: var(--font-sans);
+  font-feature-settings:
+    "cv02" 1,
+    "cv03" 1,
+    "cv11" 1;
+  text-rendering: geometricPrecision;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(96, 165, 250, 0.28);
+}
+
+.typing-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 84%);
+}
+
+.noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+}
+
+.caret-pulse {
+  animation: caretPulse 1s ease-in-out infinite;
+}
+
+@keyframes caretPulse {
+  0%,
+  100% {
+    opacity: 0.38;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.scale-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)),
+    hsl(var(--card));
+}
+
+.scale-line {
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.48), transparent);
+}
+
+.ui-title {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+}
+
+.typing-copy {
+  color: rgba(226, 232, 240, 0.96);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.typing-pad {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(45, 212, 191, 0.12), transparent 28%),
+    radial-gradient(circle at 88% 2%, rgba(251, 113, 133, 0.1), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.018)),
+    hsl(var(--card));
+}
+
+.result-strip {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.024)),
+    rgba(8, 13, 24, 0.74);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 16px 48px rgba(0, 0, 0, 0.22);
+}
+
+.ghost-inline-marker {
+  position: absolute;
+  z-index: 0;
+  right: -0.12em;
+  bottom: 0.08em;
+  left: -0.12em;
+  height: 0.28em;
+  pointer-events: none;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 72% 45%, rgba(15, 23, 42, 0.9) 0 0.055em, transparent 0.065em),
+    linear-gradient(90deg, rgba(103, 232, 249, 0.16), rgba(34, 211, 238, 0.82), rgba(251, 191, 36, 0.64));
+  box-shadow:
+    0 0 16px rgba(34, 211, 238, 0.46),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  animation: ghostInlinePulse 900ms ease-in-out infinite;
+}
+
+.ghost-inline-marker::before {
+  position: absolute;
+  top: -0.18em;
+  left: 50%;
+  width: 0.34em;
+  height: 0.26em;
+  content: "";
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, rgba(191, 247, 255, 0.96), rgba(34, 211, 238, 0.76));
+  transform: translateX(-50%);
+}
+
+.ghost-inline-marker-space {
+  right: -0.26em;
+  left: -0.26em;
+  opacity: 0.8;
+}
+
+.ghost-inline-eye {
+  position: absolute;
+  top: -0.1em;
+  left: 50%;
+  z-index: 1;
+  width: 0.05em;
+  height: 0.05em;
+  border-radius: 999px;
+  background: #0f172a;
+  box-shadow: 0.11em 0 #0f172a;
+  transform: translateX(-0.08em);
+}
+
+@keyframes ghostInlinePulse {
+  0%,
+  100% {
+    opacity: 0.68;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+.race-card {
+  position: relative;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(103, 232, 249, 0.16), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.058), rgba(255, 255, 255, 0.02)),
+    rgba(8, 13, 24, 0.84);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 22px 70px rgba(8, 145, 178, 0.1);
+}
+
+.race-card::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent),
+    radial-gradient(circle at 100% 18%, rgba(251, 113, 133, 0.12), transparent 28%);
+}
+
+.race-card > * {
+  position: relative;
+}
+
+.race-track {
+  position: relative;
+  height: 118px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.68), rgba(2, 6, 23, 0.9)),
+    rgba(8, 13, 24, 0.82);
+}
+
+.race-track-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  background-image:
+    linear-gradient(to right, rgba(125, 211, 252, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 100%, 100% 18px;
+}
+
+.race-line {
+  position: absolute;
+  right: 38px;
+  left: 16px;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.race-line-you {
+  top: 26px;
+}
+
+.race-line-ghost {
+  top: 68px;
+}
+
+.race-line::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  content: "";
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.32) 0 10px, transparent 10px 18px);
+}
+
+.race-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  transition: width 180ms ease-out;
+}
+
+.race-fill-you {
+  background:
+    linear-gradient(90deg, rgba(34, 197, 94, 0.18), rgba(52, 211, 153, 0.4)),
+    linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.08));
+}
+
+.race-fill-ghost {
+  background:
+    linear-gradient(90deg, rgba(103, 232, 249, 0.14), rgba(34, 211, 238, 0.38), rgba(251, 191, 36, 0.2)),
+    linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.08));
+}
+
+.race-runner {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  height: 22px;
+  min-width: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  transform: translate(-50%, -50%);
+  transition: left 180ms ease-out;
+}
+
+.race-runner-you {
+  padding: 0 7px;
+  color: #04130c;
+  background: linear-gradient(180deg, #bbf7d0, #34d399);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.34);
+}
+
+.race-runner-ghost {
+  color: #083344;
+  background: linear-gradient(180deg, #cffafe, #67e8f9 60%, #22d3ee);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.4);
+}
+
+.race-metric {
+  min-height: 72px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(0, 0, 0, 0.14);
+  padding: 12px;
+}
+
+.race-summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.race-summary strong {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  text-align: right;
+}
