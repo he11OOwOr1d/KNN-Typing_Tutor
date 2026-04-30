@@ -272,10 +272,10 @@ export function TelemetryDashboard() {
                   <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "Attempt", position: "insideBottom", offset: -10, fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
                   <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "WPM", angle: -90, position: "insideLeft", fill: "rgba(255,255,255,0.4)", fontSize: 11, style: { textAnchor: "middle" } }} />
                   <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }} itemStyle={{ color: "#f8fafc", fontSize: 12 }}
-                    formatter={(value: number, name: string, props: any) => {
+                    formatter={(value, name) => {
                       if (name === "WPM") return [`${value} wpm`, name];
                       if (name === "Error %") return [`${value}%`, name];
-                      return [value, name];
+                      return [value as string, name as string];
                     }}
                     labelFormatter={(label) => {
                       const attempt = wpmChartData.find(d => d.name === label);
