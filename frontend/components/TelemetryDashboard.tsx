@@ -117,7 +117,7 @@ export function TelemetryDashboard() {
 
   // WPM trend over all attempts (chronological)
   const wpmChartData = sortedAttempts.map((attempt, i) => ({
-    name: `#${i + 1}`,
+    name: `${Math.round(attempt.durationMs / 1000)}s`,
     wpm: attempt.stats.wpm,
     accuracy: attempt.stats.accuracy,
     errors: Math.round((100 - attempt.stats.accuracy) * 10) / 10,
@@ -269,7 +269,7 @@ export function TelemetryDashboard() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "Attempt", position: "insideBottom", offset: -10, fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "Duration (seconds)", position: "insideBottom", offset: -10, fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
                   <YAxis yAxisId="left" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "WPM", angle: -90, position: "insideLeft", fill: "rgba(255,255,255,0.4)", fontSize: 11, style: { textAnchor: "middle" } }} />
                   <YAxis yAxisId="right" orientation="right" stroke="rgba(255,255,255,0.2)" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} label={{ value: "Error %", angle: 90, position: "insideRight", fill: "rgba(255,255,255,0.3)", fontSize: 11, style: { textAnchor: "middle" } }} />
                   <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }} itemStyle={{ color: "#f8fafc", fontSize: 12 }}
