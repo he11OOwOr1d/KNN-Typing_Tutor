@@ -1,6 +1,21 @@
-# ⌨️ KNN Typing Tutor
+# ⌨️ TypeForge — Terminal-Native Typing Analytics Suite
 
-> A dual-platform, advanced typing analytics suite — a raw terminal application built in **Pure C**, and a modern **Next.js + Express** web platform.
+> A dual-platform advanced typing coach — a zero-dependency terminal application built in **Pure C**, and a modern **Next.js + Express** web platform with live Ghost Racing and fatigue analysis.
+
+---
+
+<div align="center">
+
+[![▶ Watch Demo](https://github.com/user-attachments/assets/ae621938-d5eb-43fb-adf0-1bad448b7506)](https://github.com/user-attachments/assets/ae621938-d5eb-43fb-adf0-1bad448b7506)
+
+</div>
+
+---
+
+<div align="center">
+  <img src="screenshot1.jpeg" alt="Terminal — Typing Session" width="49%" />
+  <img src="screenshot2.jpeg" alt="Terminal — Heatmap & Analytics" width="49%" />
+</div>
 
 ---
 
@@ -17,13 +32,12 @@
   - [Architecture](#️-web-architecture)
   - [Quick Start](#-web-quick-start)
 - [Platform Comparison](#-platform-comparison)
-- [Adding Videos & Images to This README](#-adding-videos--images-to-this-readme)
 
 ---
 
 ## 🧭 Overview
 
-The **KNN Typing Tutor** (Karthik · Nilesh · Nikhil) is designed as a virtual typing coach — not just a speed tracker. It identifies bottlenecks, plots fatigue curves, maps keyboard heatmaps, and lets you race your past self via a Ghost Racer.
+**TypeForge** is designed as a virtual typing coach — not just a speed tracker. It identifies bottlenecks, plots fatigue curves, maps keyboard heatmaps, and lets you race your past self via a Ghost Racer.
 
 | Platform | Stack | Standout |
 |---|---|---|
@@ -48,7 +62,6 @@ The **KNN Typing Tutor** (Karthik · Nilesh · Nikhil) is designed as a virtual 
 | **💡 Recommendations Engine** | Automated coaching on pacing, consistency, and bottleneck keys. |
 | **💾 Persistent Profile** | Last 5 sessions, per-duration personal bests, and total stats saved to a binary `.bin` file. |
 | **🏆 Rank System** | RECRUIT → ROOKIE → TYPIST → PRO → EXPERT → LEGEND, based on best WPM. |
-
 
 ### 🏗️ Architecture
 
@@ -192,9 +205,4 @@ npm run dev
 
 ---
 
-
-
-
-
-
-
+*Built by Karthik Reddy · Nilesh Chakrabarty · Nikhil Raj*
