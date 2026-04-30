@@ -261,7 +261,7 @@ export function TelemetryDashboard() {
             <p className="mb-6 text-xs text-muted-foreground">Your WPM and error rate across every recorded attempt, in chronological order.</p>
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={wpmChartData} margin={{ top: 10, right: 20, left: 10, bottom: 15 }}>
+                <ComposedChart data={wpmChartData} margin={{ top: 10, right: 40, left: 10, bottom: 15 }}>
                   <defs>
                     <linearGradient id="wpmGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
@@ -270,7 +270,8 @@ export function TelemetryDashboard() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
                   <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "Attempt", position: "insideBottom", offset: -10, fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
-                  <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "WPM", angle: -90, position: "insideLeft", fill: "rgba(255,255,255,0.4)", fontSize: 11, style: { textAnchor: "middle" } }} />
+                  <YAxis yAxisId="left" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "WPM", angle: -90, position: "insideLeft", fill: "rgba(255,255,255,0.4)", fontSize: 11, style: { textAnchor: "middle" } }} />
+                  <YAxis yAxisId="right" orientation="right" stroke="rgba(255,255,255,0.2)" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} label={{ value: "Error %", angle: 90, position: "insideRight", fill: "rgba(255,255,255,0.3)", fontSize: 11, style: { textAnchor: "middle" } }} />
                   <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }} itemStyle={{ color: "#f8fafc", fontSize: 12 }}
                     formatter={(value, name) => {
                       if (name === "WPM") return [`${value} wpm`, name];
@@ -283,8 +284,8 @@ export function TelemetryDashboard() {
                     }}
                   />
                   <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: "12px", opacity: 0.75 }} />
-                  <Area type="monotone" dataKey="wpm" name="WPM" stroke="#06b6d4" strokeWidth={2} fill="url(#wpmGrad)" fillOpacity={1} dot={{ r: 3, fill: "#06b6d4" }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="errors" name="Error %" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 4" dot={{ r: 2, fill: "#ef4444" }} activeDot={{ r: 4 }} />
+                  <Area yAxisId="left" type="monotone" dataKey="wpm" name="WPM" stroke="#06b6d4" strokeWidth={2} fill="url(#wpmGrad)" fillOpacity={1} dot={{ r: 4, fill: "#06b6d4" }} activeDot={{ r: 6 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="errors" name="Error %" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 4" dot={{ r: 3, fill: "#ef4444" }} activeDot={{ r: 5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
