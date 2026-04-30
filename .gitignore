@@ -11,5 +11,6 @@ build/
 .DS_Store
 .env*
 
-# Data
+# Data (runtime files – do not commit)
 backend/data/*.json
+!backend/data/sentences.json

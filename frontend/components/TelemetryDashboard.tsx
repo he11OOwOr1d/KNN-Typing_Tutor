@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Area, ComposedChart, Line, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
-import { Activity, AlertTriangle, Clock, Gauge, Keyboard } from "lucide-react";
+import { Activity, AlertTriangle, Gauge, Keyboard } from "lucide-react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -13,6 +12,9 @@ type Attempt = {
   id: string;
   createdAt: string;
   durationMs: number;
+  text?: string;
+  typed?: string;
+  timestamps?: number[];
   stats: {
     wpm: number;
     accuracy: number;
@@ -39,11 +41,9 @@ function HeatmapVisual({ data }: { data: HeatmapData }) {
             const stats = data[key.toLowerCase()] || { total: 0, errors: 0 };
             const errorRate = stats.total > 0 ? stats.errors / stats.total : 0;
             const intensity = stats.errors > 0 ? Math.min(stats.errors / maxErrors, 1) : 0;
-            
-            // Calculate color based on error intensity. Default is standard key color, higher intensity = more red/orange
             const isSpace = key === " ";
-            const bgColor = intensity > 0 
-              ? `rgba(239, 68, 68, ${0.2 + intensity * 0.6})` 
+            const bgColor = intensity > 0
+              ? `rgba(239, 68, 68, ${0.2 + intensity * 0.6})`
               : "rgba(255, 255, 255, 0.05)";
             const borderColor = intensity > 0
               ? `rgba(239, 68, 68, ${0.4 + intensity * 0.4})`
@@ -64,7 +64,6 @@ function HeatmapVisual({ data }: { data: HeatmapData }) {
                 title={`Key: '${key}'\nErrors: ${stats.errors}\nTotal pressed: ${stats.total}\nError Rate: ${(errorRate * 100).toFixed(1)}%`}
               >
                 {!isSpace && <span className={intensity > 0.3 ? "text-red-50" : "text-muted-foreground"}>{key}</span>}
-                
                 {stats.errors > 0 && !isSpace && (
                   <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-background">
                     {stats.errors}
@@ -84,23 +83,6 @@ function HeatmapVisual({ data }: { data: HeatmapData }) {
   );
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="rounded-lg border border-white/10 bg-[#0f172a] p-3 shadow-lg backdrop-blur">
-        <p className="mb-2 font-semibold text-white">{label}</p>
-        <div className="flex flex-col gap-1 text-sm">
-          <p style={{ color: "#06b6d4" }}>WPM: <span className="font-mono font-medium">{data.wpm}</span></p>
-          <p style={{ color: "#ef4444" }}>Error Rate: <span className="font-mono font-medium">{data.errors}%</span></p>
-          <p className="text-muted-foreground">Duration: <span className="font-mono font-medium">{data.duration}s</span></p>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
 export function TelemetryDashboard() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [heatmap, setHeatmap] = useState<HeatmapData>({});
@@ -114,10 +96,8 @@ export function TelemetryDashboard() {
           fetch(`${apiBase}/api/attempts`),
           fetch(`${apiBase}/api/stats/heatmap`)
         ]);
-        
         const attemptsData = await attemptsRes.json();
         const heatmapData = await heatmapRes.json();
-        
         setAttempts(attemptsData.attempts || []);
         setHeatmap(heatmapData.heatmap || {});
       } catch (error) {
@@ -126,26 +106,94 @@ export function TelemetryDashboard() {
         setIsLoading(false);
       }
     }
-
     void loadData();
   }, []);
 
-  const sortedAttempts = [...attempts].sort((a, b) => a.durationMs - b.durationMs);
+  // Sort chronologically and label by attempt number
+  const sortedAttempts = useMemo(
+    () => [...attempts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+    [attempts]
+  );
 
-  const chartData = sortedAttempts.map((attempt) => {
-    const durationSec = Math.round(attempt.durationMs / 1000);
-    return {
-      name: `${durationSec}s`,
-      wpm: attempt.stats.wpm,
-      accuracy: attempt.stats.accuracy,
-      errors: Math.round((100 - attempt.stats.accuracy) * 10) / 10,
-      duration: durationSec
-    };
-  });
+  // Per-second WPM breakdown for the last 5 attempts, overlaid on the same chart
+  const RUN_COLORS = ["#06b6d4", "#a78bfa", "#34d399", "#fb923c", "#f472b6"];
+  const recentAttempts = sortedAttempts.slice(-5);
 
-  const avgWpm = attempts.length ? Math.round(attempts.reduce((acc, curr) => acc + curr.stats.wpm, 0) / attempts.length) : 0;
-  const avgAccuracy = attempts.length ? Math.round(attempts.reduce((acc, curr) => acc + curr.stats.accuracy, 0) / attempts.length) : 0;
-  const totalErrors = Object.values(heatmap).reduce((acc, curr) => acc + curr.errors, 0);
+  const perSecondData = useMemo(() => {
+    if (recentAttempts.length === 0) return [];
+    const maxDuration = Math.max(...recentAttempts.map(a => Math.floor(a.durationMs / 1000)));
+    const data: Record<string, any>[] = [];
+
+    for (let s = 4; s <= maxDuration; s += 4) {
+      const row: Record<string, any> = { name: `${s}s` };
+      recentAttempts.forEach((attempt, i) => {
+        if (!attempt.text || !attempt.timestamps) return;
+        const maxSec = Math.floor(attempt.durationMs / 1000);
+        if (s > maxSec) return;
+        const timeLimit = s * 1000;
+        let keysBefore = attempt.timestamps.findIndex(t => t > timeLimit);
+        if (keysBefore === -1) keysBefore = attempt.timestamps.length;
+        const typedUpTo = (attempt.typed || "").slice(0, keysBefore);
+        const targetUpTo = attempt.text.slice(0, keysBefore);
+        let correct = 0;
+        for (let j = 0; j < typedUpTo.length; j++) {
+          if (typedUpTo[j] === targetUpTo[j]) correct++;
+        }
+        row[`run${i}`] = Math.round(correct / 5 / (s / 60));
+      });
+      data.push(row);
+    }
+    return data;
+  }, [recentAttempts]);
+
+  // Fatigue curve from the latest attempt's per-second WPM
+  const latestAttempt = sortedAttempts[sortedAttempts.length - 1] ?? null;
+
+  const fatigueData = useMemo(() => {
+    if (!latestAttempt?.text || !latestAttempt.timestamps) return [];
+
+    const target = latestAttempt.text;
+    const typedStr = latestAttempt.typed || "";
+    const stamps = latestAttempt.timestamps;
+    const maxSecs = Math.floor(latestAttempt.durationMs / 1000);
+
+    const history: { time: number; wpm: number; trend?: number; name: string }[] = [];
+
+    for (let s = 1; s <= maxSecs; s++) {
+      const timeLimit = s * 1000;
+      let keysBefore = stamps.findIndex((t) => t > timeLimit);
+      if (keysBefore === -1) keysBefore = stamps.length;
+
+      const typedUpTo = typedStr.slice(0, keysBefore);
+      const targetUpTo = target.slice(0, keysBefore);
+      let correct = 0;
+      for (let i = 0; i < typedUpTo.length; i++) {
+        if (typedUpTo[i] === targetUpTo[i]) correct++;
+      }
+      const wpm = Math.round(correct / 5 / (s / 60));
+      history.push({ time: s, wpm, name: `${s}s` });
+    }
+
+    if (history.length >= 5) {
+      let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+      const n = history.length;
+      for (const p of history) { sumX += p.time; sumY += p.wpm; sumXY += p.time * p.wpm; sumX2 += p.time * p.time; }
+      const xMean = sumX / n;
+      const yMean = sumY / n;
+      const denom = sumX2 - n * xMean * xMean;
+      if (denom !== 0) {
+        const slope = (sumXY - n * xMean * yMean) / denom;
+        const intercept = yMean - slope * xMean;
+        for (const p of history) { p.trend = Math.round(slope * p.time + intercept); }
+      }
+    }
+
+    return history;
+  }, [latestAttempt]);
+
+  const avgWpm = attempts.length ? Math.round(attempts.reduce((a, c) => a + c.stats.wpm, 0) / attempts.length) : 0;
+  const avgAccuracy = attempts.length ? Math.round(attempts.reduce((a, c) => a + c.stats.accuracy, 0) / attempts.length) : 0;
+  const totalErrors = Object.values(heatmap).reduce((a, c) => a + c.errors, 0);
 
   if (isLoading) {
     return (
@@ -155,8 +203,18 @@ export function TelemetryDashboard() {
     );
   }
 
+  if (attempts.length === 0) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Activity className="h-10 w-10 opacity-30" />
+        <p className="text-sm">No attempts recorded yet. Complete a race to see your analytics!</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Summary Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-white/10 bg-black/20 backdrop-blur">
           <CardContent className="p-6">
@@ -184,82 +242,80 @@ export function TelemetryDashboard() {
         </Card>
       </div>
 
+      {/* Fatigue Curve (latest run) */}
+      {fatigueData.length > 0 && (
+        <Card className="border-white/10 bg-black/20 backdrop-blur">
+          <CardContent className="p-6">
+            <CardTitle className="mb-1 flex items-center gap-2 text-lg">
+              <Activity className="h-5 w-5 text-amber-400" /> Latest Run — Fatigue Curve
+            </CardTitle>
+            <p className="mb-6 text-xs text-muted-foreground">Per-second WPM with linear regression trendline. A falling red line = fatigue.</p>
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={fatigueData} margin={{ top: 10, right: 20, left: 10, bottom: 15 }}>
+                  <defs>
+                    <linearGradient id="fatigueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "Time (seconds)", position: "insideBottom", offset: -10, fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
+                  <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "WPM", angle: -90, position: "insideLeft", fill: "rgba(255,255,255,0.4)", fontSize: 11, style: { textAnchor: "middle" } }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }} itemStyle={{ color: "#f8fafc", fontSize: 12 }} />
+                  <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: "12px", opacity: 0.75 }} />
+                  <Area type="monotone" dataKey="wpm" name="WPM / second" stroke="#f59e0b" strokeWidth={2} fill="url(#fatigueGrad)" fillOpacity={1} dot={false} />
+                  <Line type="linear" dataKey="trend" name="Fatigue Trendline" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Per-second WPM timeline — last 5 runs */}
+      {perSecondData.length > 0 && (
+        <Card className="border-white/10 bg-black/20 backdrop-blur">
+          <CardContent className="p-6">
+            <CardTitle className="mb-1 flex items-center gap-2 text-lg">
+              <Gauge className="h-5 w-5 text-cyan-400" /> WPM Timeline — Recent Runs
+            </CardTitle>
+            <p className="mb-6 text-xs text-muted-foreground">Per-second WPM across your last {recentAttempts.length} run{recentAttempts.length !== 1 ? "s" : ""}. Compare how your speed changes throughout each session.</p>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={perSecondData} margin={{ top: 10, right: 20, left: 10, bottom: 15 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "Time (seconds)", position: "insideBottom", offset: -10, fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
+                  <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} label={{ value: "WPM", angle: -90, position: "insideLeft", fill: "rgba(255,255,255,0.4)", fontSize: 11, style: { textAnchor: "middle" } }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }} itemStyle={{ color: "#f8fafc", fontSize: 12 }} />
+                  <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: "12px", opacity: 0.75 }} />
+                  {recentAttempts.map((attempt, i) => (
+                    <Line
+                      key={attempt.id}
+                      type="monotone"
+                      dataKey={`run${i}`}
+                      name={`Run ${sortedAttempts.length - recentAttempts.length + i + 1} (${attempt.stats.wpm} wpm)`}
+                      stroke={RUN_COLORS[i]}
+                      strokeWidth={i === recentAttempts.length - 1 ? 2.5 : 1.5}
+                      strokeOpacity={i === recentAttempts.length - 1 ? 1 : 0.5}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  ))}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error Heatmap */}
       <Card className="border-white/10 bg-black/20 backdrop-blur">
         <CardContent className="p-6">
           <CardTitle className="mb-6 flex items-center gap-2 text-lg">
             <Keyboard className="h-5 w-5 text-primary" /> Error Heatmap
           </CardTitle>
           <HeatmapVisual data={heatmap} />
-        </CardContent>
-      </Card>
-
-      <Card className="border-white/10 bg-black/20 backdrop-blur">
-        <CardContent className="p-6">
-          <CardTitle className="mb-6 flex items-center gap-2 text-lg">
-            <Activity className="h-5 w-5 text-primary" /> Performance by Test Duration
-          </CardTitle>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 15 }}>
-                <defs>
-                  <linearGradient id="colorWpm" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="rgba(255,255,255,0.4)" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  dy={5}
-                  label={{ value: 'Test Duration (Seconds)', position: 'insideBottom', offset: -10, fill: 'rgba(255,255,255,0.6)' }}
-                />
-                <YAxis 
-                  yAxisId="left" 
-                  stroke="rgba(255,255,255,0.4)" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  label={{ value: 'WPM', angle: -90, position: 'insideLeft', fill: 'rgba(255,255,255,0.6)', style: { textAnchor: 'middle' } }}
-                />
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right" 
-                  stroke="rgba(255,255,255,0.4)" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  label={{ value: 'Error Rate (%)', angle: 90, position: 'insideRight', fill: 'rgba(255,255,255,0.6)', style: { textAnchor: 'middle' } }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: "13px", opacity: 0.8 }} />
-                <Area 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="wpm" 
-                  name="WPM"
-                  stroke="#06b6d4" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorWpm)" 
-                />
-                <Line 
-                  yAxisId="right"
-                  type="monotone" 
-                  dataKey="errors" 
-                  name="Error %"
-                  stroke="#ef4444" 
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={{ r: 3, fill: "#ef4444" }}
-                  activeDot={{ r: 5 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
         </CardContent>
       </Card>
     </div>
