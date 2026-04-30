@@ -125,7 +125,7 @@ export default function Home() {
   const measuredElapsedMs = Math.min(elapsedMs, timeLimitMs);
   const remainingMs = startedAt ? Math.max(timeLimitMs - measuredElapsedMs, 0) : timeLimitMs;
   const stats = useMemo(() => calculateStats(target, typed, measuredElapsedMs), [measuredElapsedMs, target, typed]);
-  const progress = target ? Math.round((typed.length / target.length) * 100) : 0;
+  const progress = startedAt ? Math.round((measuredElapsedMs / timeLimitMs) * 100) : 0;
 
   // Windowed rendering: only show ~80 words around the cursor for performance
   const wordGlyphs = useMemo(() => buildWordGlyphs(target), [target]);
@@ -303,8 +303,9 @@ export default function Home() {
 
   const currentIndex = typed.length;
   const activeIndex = Math.min(currentIndex, Math.max(target.length - 1, 0));
-  const ghostSafeIndex = Math.min(Math.max(ghostIndex, -1), Math.max(target.length - 1, 0));
-  const ghostProgress = target ? Math.round(((ghostSafeIndex + 1) / target.length) * 100) : 0;
+  const ghostTextLength = ghost?.text?.length || target.length;
+  const ghostSafeIndex = Math.min(Math.max(ghostIndex, -1), Math.max(ghostTextLength - 1, 0));
+  const ghostProgress = ghostTextLength ? Math.round(((ghostSafeIndex + 1) / ghostTextLength) * 100) : 0;
   const racerDelta = ghostIndex >= 0 ? typed.length - (ghostSafeIndex + 1) : typed.length;
 
   function selectTimer(nextTimerSeconds: number) {
@@ -638,7 +639,7 @@ export default function Home() {
                   racerDelta={racerDelta}
                   stats={stats}
                   typedCount={typed.length}
-                  targetCount={target.length}
+                  targetCount={sentence?.text?.length || 0}
                   isLive={Boolean(startedAt && !isRunOver)}
                   timerSeconds={timerSeconds}
                 />
