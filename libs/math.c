@@ -15,28 +15,49 @@ unsigned int my_rand() {
     return rand_state;
 }
 
-// Russian peasant multiplication — O(log b) instead of O(b)
 // Handles both positive and negative values correctly
 int my_multiply(int a, int b) {
-    int negative = 0;
-    if (b < 0) { negative = !negative; b = -b; }
-    if (a < 0) { negative = !negative; a = -a; }
+    int sign = ((a < 0) ^ (b < 0)) ? -1 : 1;
+
+    unsigned int x = (a < 0) ? -a : a;
+    unsigned int y = (b < 0) ? -b : b;
+
+    // iterate on smaller number (fewer loop iterations)
+    if (x < y) {
+        unsigned int temp = x;
+        x = y;
+        y = temp;
+    }
 
     int result = 0;
-    while (b > 0) {
-        if (b & 1) result += a;
-        a += a;  // a = a * 2
-        b >>= 1; // b = b / 2
+
+    while (y) {
+        if (y & 1)
+            result += x;
+
+        x <<= 1;
+        y >>= 1;
     }
-    return negative ? -result : result;
+
+    return sign * result;
 }
 
 int my_divide(int a, int b) {
-    int count = 0;
     if (b == 0) return 0;
-    while (a >= b) {
-        a -= b;
-        count++;
+
+    int sign = ((a < 0) ^ (b < 0)) ? -1 : 1;
+
+    unsigned int dividend = (a < 0) ? -a : a;
+    unsigned int divisor  = (b < 0) ? -b : b;
+
+    unsigned int result = 0;
+
+    for (int i = 31; i >= 0; i--) {
+        if ((dividend >> i) >= divisor) {
+            dividend -= (divisor << i);
+            result += (1U << i);
+        }
     }
-    return count;
+
+    return sign * result;
 }
