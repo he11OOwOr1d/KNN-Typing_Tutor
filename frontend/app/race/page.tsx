@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { Activity, AlertTriangle, ArrowRight, Flag, Gauge, Ghost, Keyboard, Plus, RotateCcw, TimerReset, Trophy, Zap } from "lucide-react";
@@ -87,6 +88,7 @@ function normalizeGhostAttempt(attempt: GhostAttempt | null): GhostAttempt | nul
 }
 
 export default function Home() {
+  const router = useRouter();
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [typed, setTyped] = useState("");
@@ -239,6 +241,9 @@ export default function Home() {
       setSavedAttempt(data.attempt);
       setIsSaving(false);
       await loadGhost(sentence.id);
+
+      // Redirect to analytics after saving
+      setTimeout(() => router.push("/analytics"), 1500);
     }
 
     void saveAttempt();
