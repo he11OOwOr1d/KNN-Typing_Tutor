@@ -76,7 +76,7 @@ app.get("/api/sentences/:id/ghost", async (request, response, next) => {
   try {
     const attempts = await readAttempts();
     const best = attempts
-      .filter((attempt) => attempt.sentenceId === request.params.id && attempt.completed)
+      .filter((attempt) => attempt.sentenceId === request.params.id)
       .sort((a, b) => {
         const wpmDelta = (b.stats?.wpm || 0) - (a.stats?.wpm || 0);
         if (wpmDelta !== 0) {
@@ -160,7 +160,7 @@ app.post("/api/attempts", async (request, response, next) => {
       timestamps: safeTimestamps,
       durationMs,
       keystrokes,
-      completed: typed.length === sentence.text.length,
+      completed: true,
       createdAt: new Date().toISOString(),
       stats
     };
